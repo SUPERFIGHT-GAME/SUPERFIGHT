@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0B1120">
+<title>Superfight Spin Randomizer — Advanced</title>
+<style>
+  /* Fully offline: no external fonts or network resources required. */
+  
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+  
+  body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0B1120;
+    color: #E2E8F0;
+    min-height: 100vh;
+    min-height: 100dvh;
+    min-height: 100svh;
+    overflow-x: hidden;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    -webkit-font-smoothing: antialiased;
+  }
+  
+  .header {
+    text-align: center;
+    padding: 24px 20px 8px;
+    background: linear-gradient(180deg, #1E293B 0%, #0B1120 100%);
+    border-bottom: 2px solid #1E293B;
+  }
+  
+  .header h1 {
+    font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+    font-size: clamp(1.8rem, 5vw, 2.8rem);
+    letter-spacing: 2px;
+    background: linear-gradient(90deg, #3B82F6, #22D3EE, #A855F7);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  .header p { color: #94A3B8; margin-top: 4px; font-size: 0.9rem; }
+  
+  .main { max-width: 1100px; margin: 0 auto; padding: 12px 12px 40px; }
+  
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
+    margin: 12px 0 16px;
+  }
+  
+  .spin-btn {
+    font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+    font-size: 1.25rem;
+    padding: 14px 36px;
+    min-height: 52px;
+    border: none;
+    border-radius: 50px;
+    background: linear-gradient(135deg, #F97316, #EF4444);
+    color: #0B1120;
+    cursor: pointer;
+    box-shadow: 0 0 28px rgba(249, 115, 22, 0.45);
+    transition: transform 0.15s, box-shadow 0.15s;
+    letter-spacing: 1px;
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: manipulation;
+  }
+  .spin-btn:hover { transform: scale(1.06); box-shadow: 0 0 40px rgba(249, 115, 22, 0.65); }
+  .spin-btn:active { transform: scale(0.97); }
+  .spin-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+  
+  .toggle-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #1E293B;
+    padding: 10px 14px;
+    min-height: 44px;
+    border-radius: 30px;
+    border: 1px solid #334155;
+    font-size: 0.85rem;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .toggle-wrap label { cursor: pointer; user-select: none; }
+  .toggle-wrap input { width: 18px; height: 18px; accent-color: #22D3EE; cursor: pointer; }
+  
+  .fighters {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 14px;
+    align-items: stretch;
+    margin-bottom: 18px;
+  }
+  @media (max-width: 800px) {
+    .fighters { grid-template-columns: 1fr; gap: 10px; }
+    .vs-badge { margin: 4px auto; }
+  }
+  
+  .card {
+    background: #1E293B;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid #334155;
+    position: relative;
+  }
+  .card.f1 { border-left: 5px solid #3B82F6; }
+  .card.f2 { border-left: 5px solid #EF4444; }
+  
+  .card-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    padding: 10px 14px 2px;
+  }
+  .card.f1 .card-label { color: #3B82F6; }
+  .card.f2 .card-label { color: #EF4444; }
+  
+  .tier-badge {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 10px;
+    letter-spacing: 0.5px;
+  }
+  .tier-weak { background: #334155; color: #94A3B8; }
+  .tier-mid { background: #1E3A5F; color: #60A5FA; }
+  .tier-strong { background: #3B1F1F; color: #F87171; }
+  
+  .slot {
+    height: 48px;
+    overflow: hidden;
+    position: relative;
+    margin: 5px 10px;
+    background: #0F172A;
+    border-radius: 8px;
+    border: 1px solid #334155;
+  }
+  
+  .slot-inner {
+    position: absolute;
+    width: 100%;
+    will-change: transform;
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+  }
+  
+  .slot-inner.spinning {
+    transition: transform 3.2s cubic-bezier(0.12, 0.75, 0.15, 1);
+  }
+  
+  .slot-item {
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 8px;
+    font-weight: 600;
+    font-size: 0.88rem;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2;
+  }
+  .slot-item.highlight {
+    color: #22D3EE;
+    font-weight: 800;
+    text-shadow: 0 0 12px rgba(34, 211, 238, 0.5);
+  }
+  .char-slot .slot-item { font-size: 0.98rem; font-weight: 800; }
+  
+  .vs-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #F97316, #EF4444);
+    font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+    font-size: 1.2rem;
+    color: #0B1120;
+    align-self: center;
+    box-shadow: 0 0 22px rgba(249, 115, 22, 0.5);
+    animation: pulseVS 2s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+  @keyframes pulseVS {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 22px rgba(249, 115, 22, 0.5); }
+    50% { transform: scale(1.08); box-shadow: 0 0 32px rgba(249, 115, 22, 0.7); }
+  }
+  
+  .extras {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  @media (max-width: 600px) { .extras { grid-template-columns: 1fr; } }
+  
+  .extra-card {
+    background: #1E293B;
+    border-radius: 12px;
+    padding: 12px 14px;
+    border: 1px solid #334155;
+  }
+  .extra-card.loc { border-top: 3px solid #06B6D4; }
+  .extra-card.scen { border-top: 3px solid #A855F7; }
+  .extra-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    margin-bottom: 6px;
+  }
+  .extra-card.loc .extra-label { color: #22D3EE; }
+  .extra-card.scen .extra-label { color: #C4B5FD; }
+  .extra-value { font-size: 0.98rem; font-weight: 600; min-height: 1.3em; }
+  
+  .hint {
+    text-align: center;
+    color: #64748B;
+    font-size: 0.82rem;
+    margin-top: 8px;
+  }
+  
+  .stats {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-top: 22px;
+    padding-top: 14px;
+    border-top: 1px solid #1E293B;
+    color: #64748B;
+    font-size: 0.78rem;
+  }
+  .stats span { color: #94A3B8; font-weight: 600; }
+  
+
+  .feature-box {
+    background: #1E293B;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+  }
+  .feature-box h3 {
+    font-size: 0.72rem;
+    letter-spacing: 1.5px;
+    margin-bottom: 10px;
+    font-weight: 700;
+  }
+  .arg-helper h3 { color: #22D3EE; }
+  .sudden-death-box h3 { color: #EF4444; }
+  .prompt-box h3 { color: #A855F7; }
+  
+  .arg-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  @media (max-width: 700px) {
+    .arg-grid { grid-template-columns: 1fr; }
+  }
+  .arg-side {
+    background: #0F172A;
+    border-radius: 8px;
+    padding: 10px 12px;
+    border-left: 3px solid #3B82F6;
+  }
+  .arg-side.f2 { border-left-color: #EF4444; }
+  .arg-side h4 {
+    font-size: 0.78rem;
+    margin-bottom: 6px;
+    color: #94A3B8;
+  }
+  .arg-side ul {
+    margin: 0;
+    padding-left: 18px;
+    font-size: 0.88rem;
+    line-height: 1.45;
+    color: #E2E8F0;
+  }
+  
+  .sudden-btn {
+    font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+    font-size: 1rem;
+    padding: 12px 28px;
+    min-height: 48px;
+    border: none;
+    border-radius: 40px;
+    background: linear-gradient(135deg, #7F1D1D, #EF4444);
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 0 0 18px rgba(239, 68, 68, 0.35);
+    transition: transform 0.15s, box-shadow 0.15s;
+    letter-spacing: 0.5px;
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: manipulation;
+  }
+  .sudden-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 28px rgba(239, 68, 68, 0.55);
+  }
+  .sudden-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+  .sudden-result {
+    margin-top: 10px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #FCA5A5;
+    min-height: 1.4em;
+  }
+
+  .prompt-btn {
+    font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+    font-size: 0.95rem;
+    padding: 12px 24px;
+    min-height: 48px;
+    border: none;
+    border-radius: 40px;
+    background: linear-gradient(135deg, #6D28D9, #A855F7);
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 0 0 18px rgba(168, 85, 247, 0.35);
+    transition: transform 0.15s, box-shadow 0.15s;
+    letter-spacing: 0.5px;
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: manipulation;
+  }
+  .prompt-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 28px rgba(168, 85, 247, 0.55);
+  }
+  .prompt-btn:active { transform: scale(0.97); }
+  .prompt-btn.copied {
+    background: linear-gradient(135deg, #059669, #10B981);
+    box-shadow: 0 0 18px rgba(16, 185, 129, 0.4);
+  }
+  .prompt-feedback {
+    margin-top: 8px;
+    font-size: 0.85rem;
+    color: #C4B5FD;
+    min-height: 1.3em;
+  }
+  
+  .controls { flex-wrap: wrap; }
+
+  /* Spin flash effect */
+  .card.flash {
+    animation: cardFlash 0.4s ease;
+  }
+  @keyframes cardFlash {
+    0% { box-shadow: 0 0 0 rgba(34, 211, 238, 0); }
+    40% { box-shadow: 0 0 28px rgba(34, 211, 238, 0.45); }
+    100% { box-shadow: 0 0 0 rgba(34, 211, 238, 0); }
+  }
+
+  /* ===== iPhone / Mobile optimizations ===== */
+  @media (max-width: 480px) {
+    .header { padding: 16px 12px 6px; }
+    .header h1 { font-size: 1.7rem; letter-spacing: 1px; }
+    .header p { font-size: 0.8rem; }
+    
+    .main { padding: 10px 10px 32px; }
+    
+    .controls { gap: 8px; margin: 10px 0 14px; }
+    .spin-btn {
+      font-size: 1.15rem;
+      padding: 14px 28px;
+      width: 100%;
+      max-width: 280px;
+    }
+    .toggle-wrap { font-size: 0.8rem; padding: 9px 12px; }
+    
+    .card { border-radius: 12px; }
+    .card-label { padding: 8px 12px 2px; font-size: 0.68rem; }
+    .tier-badge { top: 6px; right: 8px; font-size: 0.6rem; }
+    
+    .slot { height: 44px; margin: 4px 8px; }
+    .slot-item { height: 44px; font-size: 0.82rem; padding: 0 6px; }
+    .char-slot .slot-item { font-size: 0.9rem; }
+    
+    .vs-badge { width: 48px; height: 48px; font-size: 1.05rem; }
+    
+    .extra-card { padding: 10px 12px; }
+    .extra-value { font-size: 0.9rem; }
+    
+    .feature-box { padding: 12px; }
+    .arg-side { padding: 8px 10px; }
+    .arg-side ul { font-size: 0.84rem; padding-left: 16px; }
+    
+    .sudden-btn {
+      font-size: 0.95rem;
+      padding: 12px 24px;
+      min-height: 48px;
+      width: 100%;
+      max-width: 260px;
+      touch-action: manipulation;
+    }
+    .prompt-btn {
+      font-size: 0.9rem;
+      padding: 12px 20px;
+      min-height: 48px;
+      width: 100%;
+      max-width: 260px;
+    }
+    
+    .stats { gap: 12px; font-size: 0.72rem; }
+    .hint { font-size: 0.78rem; }
+  }
+
+  /* Prefer reduced motion for accessibility / battery */
+  @media (prefers-reduced-motion: reduce) {
+    .vs-badge { animation: none; }
+    .slot-inner.spinning { transition-duration: 1.2s !important; }
+    .card.flash { animation: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="header">
+    <h1>SUPERFIGHT</h1>
+    <p>Advanced Spin Randomizer — Anti-repeat + Power Balance</p>
+  </div>
+  
+  <div class="main">
+    <div class="controls">
+      <button class="spin-btn" id="spinBtn" onclick="spinAll()">SPIN!</button>
+      <div class="toggle-wrap">
+        <input type="checkbox" id="balanceToggle" checked>
+        <label for="balanceToggle">Power Balance</label>
+      </div>
+      <div class="toggle-wrap">
+        <input type="checkbox" id="antiRepeatToggle" checked>
+        <label for="antiRepeatToggle">Anti-Repeat</label>
+      </div>
+    </div>
+    
+    <div class="fighters">
+      <div class="card f1" id="card1">
+        <div class="card-label">FIGHTER 1</div>
+        <div class="tier-badge tier-mid" id="tier1">MID</div>
+        <div class="slot char-slot" id="slot1char"><div class="slot-inner" id="inner1char"></div></div>
+        <div class="slot" id="slot1a1"><div class="slot-inner" id="inner1a1"></div></div>
+        <div class="slot" id="slot1a2"><div class="slot-inner" id="inner1a2"></div></div>
+      </div>
+      
+      <div class="vs-badge">VS</div>
+      
+      <div class="card f2" id="card2">
+        <div class="card-label">FIGHTER 2</div>
+        <div class="tier-badge tier-mid" id="tier2">MID</div>
+        <div class="slot char-slot" id="slot2char"><div class="slot-inner" id="inner2char"></div></div>
+        <div class="slot" id="slot2a1"><div class="slot-inner" id="inner2a1"></div></div>
+        <div class="slot" id="slot2a2"><div class="slot-inner" id="inner2a2"></div></div>
+      </div>
+    </div>
+    
+    <div class="extras">
+      <div class="extra-card loc">
+        <div class="extra-label">LOCATION</div>
+        <div class="extra-value" id="locValue">—</div>
+      </div>
+      <div class="extra-card scen">
+        <div class="extra-label">SCENARIO</div>
+        <div class="extra-value" id="scenValue">—</div>
+      </div>
+    </div>
+    
+    <div class="feature-box arg-helper" id="argHelperBox" style="display:none;">
+      <h3>ARGUMENT HELPER</h3>
+      <div class="arg-grid">
+        <div class="arg-side" id="argSide1">
+          <h4>Fighter 1 talking points</h4>
+          <ul id="argList1"></ul>
+        </div>
+        <div class="arg-side f2" id="argSide2">
+          <h4>Fighter 2 talking points</h4>
+          <ul id="argList2"></ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="feature-box prompt-box" id="promptBox" style="display:none;">
+      <h3>IMAGE PROMPT</h3>
+      <p style="font-size:0.82rem;color:#94A3B8;margin-bottom:10px;">Copy a ready-made prompt and paste it into any AI image generator.</p>
+      <button class="prompt-btn" id="promptBtn" onclick="copyImagePrompt()">COPY IMAGE PROMPT</button>
+      <div class="prompt-feedback" id="promptFeedback"></div>
+    </div>
+    
+    <div class="feature-box sudden-death-box">
+      <h3>SUDDEN DEATH</h3>
+      <p style="font-size:0.82rem;color:#94A3B8;margin-bottom:10px;">Table tied? Spin a brutal sudden-death scenario.</p>
+      <button class="sudden-btn" id="suddenBtn" onclick="spinSuddenDeath()">SUDDEN DEATH</button>
+      <div class="sudden-result" id="suddenResult"></div>
+    </div>
+
+    <p class="hint">Argue who would win. There is no correct answer — only the best argument.</p>
+    
+    <div class="stats">
+      <div>Characters: <span id="statChar">0</span></div>
+      <div>Attributes: <span id="statAttr">0</span></div>
+      <div>Locations: <span id="statLoc">0</span></div>
+      <div>Scenarios: <span id="statScen">0</span></div>
+      <div>Recent blocked: <span id="statBlocked">0</span></div>
+    </div>
+  </div>
+
+<script>
+// ===== DATA =====
+const characters = [{n:"101 Dalmatians",t:1},{n:"A black hole",t:3},{n:"A clone of you",t:1},{n:"A cursed VHS tape",t:2},{n:"A flock of seagulls",t:1},{n:"A haunted house",t:2},{n:"A herd of elephants",t:2},{n:"A murder of crows",t:2},{n:"A pack of wolves",t:2},{n:"A pride of lions",t:2},{n:"A school of piranhas",t:2},{n:"A sentient toaster",t:1},{n:"A supernova",t:3},{n:"A swarm of bees",t:2},{n:"Abraham Lincoln",t:2},{n:"Abu",t:1},{n:"Aladdin",t:1},{n:"Alien",t:2},{n:"Among Us Crewmate",t:1},{n:"Among Us Impostor",t:2},{n:"An army of ants",t:2},{n:"Anakin Skywalker",t:3},{n:"Angel",t:3},{n:"Apache Warrior",t:2},{n:"Aquaman",t:3},{n:"Archer",t:2},{n:"Arnold Schwarzenegger",t:2},{n:"Assassin",t:2},{n:"Baby Yoda",t:2},{n:"Barney",t:1},{n:"Batman",t:3},{n:"Batman (LEGO)",t:2},{n:"Belle",t:1},{n:"Big Bad Wolf",t:2},{n:"Black Panther",t:3},{n:"Blob",t:1},{n:"Bo Peep",t:1},{n:"Boba Fett",t:2},{n:"Bodybuilder",t:2},{n:"Bowser",t:3},{n:"Boy Band",t:1},{n:"Boy Scout",t:1},{n:"Bruce Lee",t:3},{n:"Bugs Bunny",t:2},{n:"Bull",t:2},{n:"Bumblebee",t:2},{n:"Buzz Lightyear",t:2},{n:"C-3PO",t:1},{n:"Cactus",t:1},{n:"Captain America",t:3},{n:"Captain Hook",t:1},{n:"Captain Jack Sparrow",t:2},{n:"Cat",t:1},{n:"Centaur",t:2},{n:"Charizard",t:3},{n:"Cheetah",t:2},{n:"Chef",t:1},{n:"Chewbacca",t:2},{n:"Chuck Norris",t:3},{n:"Cinderella",t:1},{n:"College A Cappella Group",t:1},{n:"Comic Book Guy",t:1},{n:"Crash Bandicoot",t:2},{n:"Creeper",t:1},{n:"Cristiano Ronaldo",t:2},{n:"Daffy Duck",t:1},{n:"Darth Maul",t:3},{n:"Darth Vader",t:3},{n:"Deadpool",t:3},{n:"Diddy Kong",t:1},{n:"Doctor Strange",t:3},{n:"Donald Duck",t:1},{n:"Donkey Kong",t:2},{n:"Dory",t:1},{n:"Dr. Melfi",t:1},{n:"Dracula",t:3},{n:"Dumbledore",t:3},{n:"Fiona",t:1},{n:"Flash",t:3},{n:"Forky",t:1},{n:"Frodo",t:1},{n:"Gandalf",t:3},{n:"Genie",t:3},{n:"George W. Bush",t:1},{n:"Girl Scout",t:1},{n:"Godzilla",t:3},{n:"Goofy",t:1},{n:"Groot",t:2},{n:"Han Solo",t:2},{n:"Harry Potter",t:3},{n:"Hermione Granger",t:2},{n:"Hillary Clinton",t:1},{n:"Hornet",t:2},{n:"Hulk",t:3},{n:"Indiana Jones",t:2},{n:"Iron Man",t:3},{n:"Jabba the Hutt",t:1},{n:"Jackie Chan",t:3},{n:"Jafar",t:2},{n:"James Bond",t:2},{n:"Jar Jar Binks",t:1},{n:"Jasmine",t:1},{n:"Jaws",t:2},{n:"John Cena",t:2},{n:"John Wick",t:3},{n:"Joker",t:2},{n:"Katniss Everdeen",t:2},{n:"Kindergarten Class",t:1},{n:"King Kong",t:3},{n:"Kirby",t:3},{n:"Knuckles",t:2},{n:"Lara Croft",t:2},{n:"LeBron James",t:2},{n:"Legolas",t:2},{n:"Leprechaun",t:2},{n:"Lightning McQueen",t:1},{n:"Link",t:3},{n:"Lionel Messi",t:2},{n:"Little Red Riding Hood",t:1},{n:"Loki",t:3},{n:"Luca",t:1},{n:"Luigi",t:1},{n:"Luke Skywalker",t:3},{n:"Magneto",t:3},{n:"Mandalorian",t:2},{n:"Mario",t:2},{n:"Mater",t:1},{n:"Maui",t:3},{n:"Medusa",t:3},{n:"Megashark",t:3},{n:"Megatron",t:3},{n:"Mewtwo",t:3},{n:"Michael Jordan",t:2},{n:"Mickey Mouse",t:1},{n:"Mike Wazowski",t:1},{n:"Minotaur",t:2},{n:"Moana",t:2},{n:"Mr. Krabs",t:1},{n:"Mr. Potato Head",t:1},{n:"Mr. Rogers",t:1},{n:"Mufasa",t:2},{n:"Mulan",t:2},{n:"Muscle Man",t:1},{n:"Nala",t:1},{n:"Nemo",t:1},{n:"Ninja",t:2},{n:"Obi-Wan",t:3},{n:"Obi-Wan Kenobi",t:3},{n:"Olaf",t:1},{n:"Oprah",t:1},{n:"Optimus Prime",t:3},{n:"Pac-Man",t:2},{n:"Pascal",t:1},{n:"Patrick Star",t:1},{n:"Penguin Army",t:2},{n:"Percy Jackson",t:3},{n:"Peter Pan",t:2},{n:"Pikachu",t:2},{n:"Pirate",t:2},{n:"Plankton",t:1},{n:"Polar Bear",t:2},{n:"Princess Peach",t:1},{n:"Professor X",t:3},{n:"Pumbaa",t:1},{n:"Puss in Boots",t:2},{n:"R2-D2",t:1},{n:"Rafiki",t:1},{n:"Rambo",t:2},{n:"Rapunzel",t:1},{n:"Ratchet",t:1},{n:"Remy",t:1},{n:"Robot",t:2},{n:"Ron Weasley",t:1},{n:"Santa Claus",t:2},{n:"Sasquatch",t:2},{n:"Scar",t:2},{n:"Scooby-Doo and the Gang",t:1},{n:"Secret Agent",t:2},{n:"Senior Citizen Bowling Team",t:1},{n:"Serena Williams",t:2},{n:"Shadow the Hedgehog",t:3},{n:"Shaquille O'Neal",t:2},{n:"Shark",t:2},{n:"Sherlock Holmes",t:2},{n:"Shrek",t:2},{n:"Simba",t:2},{n:"Simone Biles",t:2},{n:"Sleeping Beauty",t:1},{n:"Snape",t:2},{n:"Snorlax",t:2},{n:"Snow White",t:1},{n:"Sonic the Hedgehog",t:3},{n:"Spider-Man",t:3},{n:"SpongeBob SquarePants",t:1},{n:"Spyro",t:2},{n:"Squidward",t:1},{n:"Steve (Minecraft)",t:1},{n:"Stone Cold Steve Austin",t:2},{n:"Stormtrooper",t:1},{n:"Sulley",t:2},{n:"Superman",t:3},{n:"T-Rex",t:3},{n:"Tails",t:1},{n:"Taylor Swift",t:1},{n:"Terminator",t:3},{n:"Thanos",t:3},{n:"The entire internet",t:3},{n:"The Mandalorian",t:2},{n:"The moon",t:2},{n:"The person reading this card",t:1},{n:"The Predator",t:3},{n:"The President",t:1},{n:"The Rock",t:2},{n:"The sun",t:3},{n:"The Three Little Pigs",t:1},{n:"The Undertaker",t:2},{n:"Thor",t:3},{n:"Tinker Bell",t:1},{n:"Tom Brady",t:1},{n:"Tony Stark",t:3},{n:"Usain Bolt",t:2},{n:"Valkyrie",t:2},{n:"Venom",t:3},{n:"Viking",t:2},{n:"Voldemort",t:3},{n:"Wall-E",t:1},{n:"Werewolf",t:2},{n:"Wizard",t:2},{n:"Wolverine",t:3},{n:"Wonder Woman",t:3},{n:"Woody",t:1},{n:"Woolly Mammoth",t:2},{n:"Yoda",t:3},{n:"Your evil twin",t:2},{n:"Your future self",t:2},{n:"Your past self",t:1},{n:"Zazu",t:1},{n:"Zelda",t:2},{n:"Zeus",t:3},{n:"Zombie",t:1},{n:"Tom and Jerry",t:2},{n:"Fred Flintstone",t:2},{n:"Winnie the Pooh",t:2},{n:"Charlie Brown",t:2},{n:"Popeye",t:2},{n:"Garfield",t:2},{n:"Goku",t:2},{n:"Pink Panther",t:2},{n:"Patrick Mahomes",t:2},{n:"Tiger Woods",t:2},{n:"Stephen Curry",t:2},{n:"Tom Cruise",t:2},{n:"Minnie Mouse",t:2},{n:"Pluto",t:2},{n:"Daisy Duck",t:2},{n:"Porky Pig",t:2},{n:"Yosemite Sam",t:2},{n:"Elmer Fudd",t:2},{n:"Tweety Bird & Sylvester",t:2},{n:"Wile E. Coyote & Road Runner",t:2},{n:"Marvin the Martian",t:2},{n:"Foghorn Leghorn",t:2},{n:"Woody Woodpecker",t:2},{n:"Casper the Friendly Ghost",t:2},{n:"Yogi Bear",t:2},{n:"The Grinch",t:2},{n:"Phineas and Ferb",t:2},{n:"Perry the Platypus",t:2},{n:"Pinocchio",t:2},{n:"Dumbo",t:2},{n:"Tarzan",t:2},{n:"Bolt",t:2},{n:"Wreck-It Ralph",t:2},{n:"Mr. Incredible",t:2},{n:"Toothless",t:2},{n:"Gru",t:2},{n:"Minions",t:2},{n:"The Flash",t:2},{n:"Green Lantern",t:2},{n:"Cyborg",t:2},{n:"Supergirl",t:2},{n:"Catwoman",t:2},{n:"Harley Quinn",t:2},{n:"The Riddler",t:2},{n:"Penguin",t:2},{n:"Two-Face",t:2},{n:"Scarecrow",t:2},{n:"Bane",t:2},{n:"Poison Ivy",t:2},{n:"Ant-Man",t:2},{n:"The Wasp",t:2},{n:"Quicksilver",t:2},{n:"Daredevil",t:2},{n:"Storm",t:2},{n:"Rogue",t:2},{n:"Gambit",t:2},{n:"Beast",t:2},{n:"Iceman",t:2},{n:"Mystique",t:2},{n:"Juggernaut",t:2},{n:"Rocket Raccoon",t:2},{n:"Silver Surfer",t:2},{n:"Green Goblin",t:2},{n:"Doctor Doom",t:2}];
+
+const attributes = [{n:"10 stories tall",t:1},{n:"100 of them",t:1},{n:"3-foot fingernails",t:1},{n:"6 inches tall",t:1},{n:"Afraid of water",t:1},{n:"Armed with a bacon-wrapped baseball bat",t:1},{n:"Armed with a bag of infinite bear traps",t:1},{n:"Armed with a baguette",t:1},{n:"Armed with a banana",t:1},{n:"Armed with a barbed wire net",t:1},{n:"Armed with a cannon",t:1},{n:"Armed with a catapult and unlimited livestock",t:1},{n:"Armed with a cattle prod",t:1},{n:"Armed with a chainsaw",t:1},{n:"Armed with a flamethrower",t:1},{n:"Armed with a freeze ray",t:1},{n:"Armed with a lightsaber",t:1},{n:"Armed with a lightsaber in each hand",t:1},{n:"Armed with a rocket launcher",t:1},{n:"Armed with a rotating machine gun turret",t:1},{n:"Armed with a shrink ray",t:1},{n:"Armed with a skunk on a stick",t:1},{n:"Armed with a wand",t:1},{n:"Armed with an infinite sausage lasso",t:1},{n:"Armed with laser eyes",t:1},{n:"Armed with nunchucks",t:1},{n:"Bottom half is a polar bear",t:1},{n:"Breathes fire",t:1},{n:"Can breathe underwater",t:1},{n:"Can call in an airstrike",t:1},{n:"Can cast magic spells",t:1},{n:"Can control minds",t:1},{n:"Can control the weather",t:1},{n:"Can copy any ability they see",t:1},{n:"Can create illusions",t:1},{n:"Can eat anything",t:1},{n:"Can erase time",t:1},{n:"Can fly",t:1},{n:"Can only be defeated by true love",t:1},{n:"Can only be hurt by pure iron",t:1},{n:"Can open portals",t:1},{n:"Can phase through walls",t:1},{n:"Can possess people",t:1},{n:"Can raise the dead",t:1},{n:"Can regenerate",t:1},{n:"Can stop time",t:1},{n:"Can stretch infinitely",t:1},{n:"Can summon a giant robot",t:1},{n:"Can summon and command squirrels",t:1},{n:"Can survive in space",t:1},{n:"Can talk to animals",t:1},{n:"Can teleport",t:1},{n:"Can time-stop for 5 seconds",t:1},{n:"Can turn into a demon",t:1},{n:"Can turn into a swarm of insects",t:1},{n:"Can turn into fire",t:1},{n:"Can turn into ice",t:1},{n:"Can turn into lightning",t:1},{n:"Can turn invisible while singing showtunes",t:1},{n:"Figuratively on fire",t:1},{n:"Hands are covered in butter",t:1},{n:"Has a bag of healing potions",t:1},{n:"Has a bet on the outcome",t:1},{n:"Has a death ray",t:1},{n:"Has a gravity gun",t:1},{n:"Has a healing factor",t:1},{n:"Has a jetpack",t:1},{n:"Has a mutant power",t:1},{n:"Has a mysterious past",t:1},{n:"Has a personal army",t:1},{n:"Has a personal force field",t:1},{n:"Has a pet dragon",t:1},{n:"Has a power level over 9000",t:1},{n:"Has a prophecy about them",t:1},{n:"Has a theme song that plays during battle",t:1},{n:"Has a tragic backstory",t:1},{n:"Has already seen this fight",t:1},{n:"Has amnesia but is still somehow strong",t:1},{n:"Has an army of clones",t:1},{n:"Has cartoonishly large heads",t:1},{n:"Has giant magnets for hands",t:1},{n:"Has infinite ammo",t:1},{n:"Has infinite stamina",t:1},{n:"Has night vision",t:1},{n:"Has one million Twitter followers",t:1},{n:"Has perfect aim",t:1},{n:"Has Six Eyes",t:1},{n:"Has super strength",t:1},{n:"Has the power of friendship and also a gun",t:1},{n:"Has time travel",t:1},{n:"Has tiny T-Rex arms",t:1},{n:"Hasn't eaten in 2 days",t:1},{n:"Horrible self-esteem",t:1},{n:"Inside a giant hamster ball",t:1},{n:"Inside a giant robotic zombie",t:1},{n:"Is a genius",t:1},{n:"Is a ghost",t:1},{n:"Is a hologram",t:1},{n:"Is a hypnotist",t:1},{n:"Is a living bomb",t:1},{n:"Is a perfect shapeshifter",t:1},{n:"Is a sentient AI",t:1},{n:"Is a Specialist",t:1},{n:"Is a time traveler from the future",t:1},{n:"Is a time traveler from the past",t:1},{n:"Is a vampire",t:1},{n:"Is a werewolf",t:1},{n:"Is actually three kids in a trenchcoat",t:1},{n:"Is allergic to sunlight",t:1},{n:"Is already dead",t:1},{n:"Is an immortal",t:1},{n:"Is bored of winning",t:1},{n:"Is covered in bees",t:1},{n:"Is driving a tank",t:1},{n:"Is dual-wielding katanas",t:1},{n:"Is dual-wielding pistols",t:1},{n:"Is extremely lucky",t:1},{n:"Is extremely unlucky",t:1},{n:"Is fighting because reasons",t:1},{n:"Is fighting for the fate of the universe",t:1},{n:"Is fighting over the last slice of pizza",t:1},{n:"Is fireproof",t:1},{n:"Is here for the wrong reasons",t:1},{n:"Is immune to all damage except emotional damage",t:1},{n:"Is immune to magic",t:1},{n:"Is immune to physical damage",t:1},{n:"Is made of living metal",t:1},{n:"Is made of rubber",t:1},{n:"Is not taking this seriously at all",t:1},{n:"Is on fire but fine with it",t:1},{n:"Is powered by friendship",t:1},{n:"Is powered by pure rage",t:1},{n:"Is radioactive",t:1},{n:"Is taking this way too seriously",t:1},{n:"Is the final boss",t:1},{n:"Is the main character",t:1},{n:"Is the secret final boss",t:1},{n:"Is the size of a house",t:1},{n:"Is the size of an ant",t:1},{n:"Is underestimating the opponent",t:1},{n:"Is underwater",t:1},{n:"Is vulnerable to fire",t:1},{n:"Is vulnerable to water",t:1},{n:"Is wearing a hazmat suit",t:1},{n:"Is wearing a tuxedo",t:1},{n:"Is wearing the Infinity Gauntlet (with no stones)",t:1},{n:"Just drank 5 energy drinks",t:1},{n:"Just really wants a sandwich",t:1},{n:"Just wants to be friends",t:1},{n:"Knows the future",t:1},{n:"Leading 300 Spartans",t:1},{n:"Leads an army of penguins",t:1},{n:"Made of sand",t:1},{n:"Manning a Civil War cannon",t:1},{n:"Must say their attack names out loud",t:1},{n:"Never misses",t:1},{n:"On a jet ski",t:1},{n:"On a Segway",t:1},{n:"On the moon",t:1},{n:"Rides a bear",t:1},{n:"Rides a motorcycle",t:1},{n:"Shoots lightning",t:1},{n:"Super speed",t:1},{n:"Throwing burritos",t:1},{n:"Throws knives",t:1},{n:"Turns to stone in sunlight",t:1},{n:"Uses the Force",t:1},{n:"Was bitten by a radioactive spider",t:1},{n:"Was exposed to gamma radiation",t:1},{n:"Was trained by a mysterious old master",t:1},{n:"Was tricked into fighting",t:1},{n:"Can duplicate themselves",t:1},{n:"Can become 10× stronger for 30 seconds",t:1},{n:"Can freeze anything they touch",t:1},{n:"Can steal one ability from their opponent",t:1},{n:"Armed with a leaf blower",t:1},{n:"Armed with a frying pan",t:1},{n:"Has the reflexes of a cat",t:1},{n:"Has a personal hype man",t:1},{n:"Has to stop every 30 seconds to check their phone",t:1},{n:"Is wearing Crocs in sport mode",t:1}];
+const locations = ["At a abandoned mall","At a botanical garden","At a carnival","At a cherry blossom festival","At a children's birthday party","At a circus","At a Comic-Con","At a data center","At a DMV","At a family reunion","At a fancy dinner party","At a gas station at midnight","At a hacker convention","At a haunted carnival","At a hot dog eating contest","At a Japanese castle","At a job interview","At a magic show","At a mega-corporation headquarters","At a monster island","At a paintball field","At a Quidditch pitch","At a Renaissance fair","At a rock concert","At a science museum","At a silent disco","At a silent library during finals week","At a trampoline park","At a UFO crash site","At a Waffle House at 3 AM","At a yoga retreat","At an aquarium","At Hogwarts","At Platform 9\u00be","At the Avengers Tower","At the bottom of the ocean","At the center of the Earth","At the Colosseum","At the edge of a cliff","At the edge of the observable universe","At the North Pole","At the Quidditch World Cup","At the Super Bowl halftime show","At the World Cup","Comic book convention","In a abandoned theme park","In a alien mothership","In a ball pit","In a bamboo forest","In a boxing ring","In a candy store","In a courtroom","In a dark alley","In a dream","In a funhouse mirror maze","In a funnel cake stand","In a giant maze","In a gladiator arena","In a go-kart track","In a greenhouse","In a haunted amusement park","In a haunted house","In a haunted IKEA","In a haunted mansion","In a hospital waiting room","In a house of horrors","In a hurricane","In a jungle","In a kitchen during Thanksgiving","In a laser tag arena","In a library during quiet hours","In a Mars colony","In a mirror dimension","In a mirror maze","In a museum after hours","In a parallel universe","In a place with no gravity","In a public restroom","In a room full of balloons","In a room full of mirrors","In a samurai dojo","In a shopping mall on Black Friday","In a submarine","In a time loop","In a underground club","In a underground research facility","In a video game","In a virtual reality simulation","In a wormhole","In a zero-gravity chamber","In a zoo after closing","In an elevator that's stuck","In an IKEA","In Area 51","In complete darkness","In reality","In the Astronomy Tower","In the Batcave","In the Battle of Hogwarts","In the Death Star","In the Jedi Temple","In the kitchens of Hogwarts","In the middle of a freeway","In the middle of a tornado","In the trophy room","Inside a black hole","Inside a computer","Inside a Costco","Inside a giant hamster ball","Inside a giant pinball machine","Inside a giant shoe","Inside a giant shoe store","Inside a volcano","Inside a washing machine","Inside the Matrix","Ocean of gelatin","On a alien planet","On a battlefield from WWII","On a crowded subway train","On a cruise ship","On a desert island","On a desert island with no Wi-Fi","On a ferris wheel","On a floating island","On a flying car highway","On a giant chessboard","On a giant robot battlefield","On a melting iceberg","On a moving train roof","On a nuclear submarine","On a pirate ship","On a pirate-themed mini golf course","On a plane mid-flight","On a roller coaster","On a roof during a thunderstorm","On a runaway train","On a stage in front of thousands","On a tightrope between two skyscrapers","On a tilt-a-whirl","On a water slide","On live television","On the Enterprise","On the Hogwarts Express","On the International Space Station","On the internet","On the moon","On the surface of Mars","On top of Mount Everest","Space station","On top of a skyscraper","Inside an active volcano","In an abandoned castle","In a magical forest","On the surface of the Sun","In a Walmart at 2 AM","In the middle of a Chuck E. Cheese","Inside a Costco freezer","At a family Thanksgiving","In a McDonald's playplace","In a porta-potty","At a children's soccer game","In a crowded DMV","In the middle of a wedding","At a PTA meeting","In a dentist's office","In a packed elevator","At a high school prom","In the cereal aisle","In the middle of a church potluck","At a neighborhood garage sale","In a bounce house","Inside a giant refrigerator","In a crowded airport","In a drive-thru line","At a senior citizens' bingo night"];
+
+const scenarios = ["A baby is sleeping nearby and they can't wake it", "A flock of pigeons keeps getting in the way", "A food truck pulls up mid-fight", "A live orchestra is playing dramatic music", "A mariachi band starts playing", "A mime is trapped in an invisible box nearby", "A narrator is constantly commenting on the action", "A news helicopter is hovering overhead", "A parade interrupts the fight", "A random bystander keeps offering unhelpful advice", "A random object appears every 10 seconds", "A seagull steals something important mid-fight", "A sports commentator is narrating everything", "A swarm of bees is involved", "A third party keeps interrupting", "A wedding party walks through the middle", "Every attack must be announced out loud first", "Every attack must be approved by a committee first", "Every hit causes a flashback to their childhood", "Every time someone lands a hit, they have to compliment the other person", "Everyone is invisible", "Fighters have cartoonishly large heads", "Gravity is reversed", "It's a dance-off instead of a fight", "It's a food fight", "It's a formal debate format", "It's a no-holds-barred cage match", "It's a pillow fight", "It's a staring contest that escalates", "It's a three-legged race but with fighting", "It's a tickle fight", "It's a water balloon fight", "It's all a dream... or is it?", "It's all being recorded for TikTok", "It's extremely windy", "It's happening during a fire drill", "It's happening during a power outage", "It's happening during a Zoom meeting", "It's happening in a ball pit", "It's happening in a bouncy castle", "It's happening in a library and they must stay quiet", "It's happening in slow motion", "It's happening inside a snow globe", "It's happening on a trampoline", "It's opposite day and also opposite day is cancelled", "It's raining actual cats and dogs", "It's raining soup", "It's the most disappointing fight in history", "It's the most epic fight in history", "It's Valentine's Day and they keep getting distracted", "Kitten stampede", "Land mines everywhere", "No weapons allowed", "One of them is actually a robot", "One of them is secretly a double agent", "Only food can be used as weapons", "Someone keeps playing the wrong theme music", "Speed is doubled", "Sudden death overtime", "The fight is a cooking competition", "The fight is a cooking show challenge", "The fight is a game of tag that escalates", "The fight is a job interview", "The fight is a rap battle", "The fight is a spelling bee", "The fight is a spelling bee that turns violent", "The fight is actually a therapy session", "The fight is being judged by a panel of dogs", "The fight is being judged by a panel of toddlers", "The fight is being judged by cats", "The fight is being live-streamed to their parents", "The fight is being scored by a AI that hates both of them", "The fight is being scored like figure skating", "The fight is happening in a parallel universe where gravity is sideways", "The fight is happening in the future", "The fight is happening in the past", "The fight is sponsored by a cereal brand", "The first one to laugh loses", "The first one to say the other's name loses", "The floor is lava", "The floor is made of Legos", "The gravity changes every 30 seconds", "The ground is covered in banana peels", "The lights keep flickering", "The loser gets a participation trophy and free ice cream", "The loser has to buy dinner", "The soundtrack is just elevator music", "The winner gets a participation trophy", "The winner has to write a thank-you note", "Their bosses are watching", "Their mothers are watching", "They are both extremely competitive about who is being more chill", "They are both extremely itchy", "They are both extremely polite about it", "They are both extremely sleepy", "They are both extremely tired", "They are both giant versions of themselves", "They are both on fire but neither notices", "They are both tiny versions of themselves", "They are both wearing roller skates", "They are both wearing stilts", "They both have amnesia", "They both think the other is their best friend", "They can only attack after telling a dad joke", "They can only attack with their elbows", "They can only move by hopping", "They can only move in slow motion on purpose", "They can only move when someone isn't looking at them", "They can only speak in questions", "They can only speak in rhymes", "They can only use their feet", "They can only use their heads", "They have to narrate their own moves in the third person", "They keep apologizing during the fight", "They keep forgetting each other's names", "They keep forgetting why they're fighting", "They keep getting déjà vu", "They keep getting interrupted by phone calls", "They keep switching places randomly", "They keep switching weapons randomly", "They must fight in mime", "They must fight using only compliments and then attacks", "They must fight using only kitchen utensils", "They must fight using only office supplies", "They must fight using only their non-dominant hand", "They must fight while assembling IKEA furniture", "They must fight while balancing books on their heads", "They must fight while balancing on a ball", "They must fight while doing the chicken dance", "They must fight while doing the Macarena", "They must fight while eating spicy food", "They must fight while explaining quantum physics", "They must fight while explaining their taxes", "They must fight while holding a baby", "They must fight while holding hands", "They must fight while reciting the alphabet backwards", "They must fight while singing", "They must fight while solving a crossword puzzle", "They must fight while solving a Rubik's cube", "They must fight while wearing those giant foam fingers", "They must keep one hand on their head at all times", "They must stay within a hula hoop the entire time", "They must use only compliments as attacks", "They must use only items from a dollar store", "They must wear oven mitts the entire time", "Time is moving in reverse","The winner gets one wish","They can only use their strongest ability once","A toddler is the referee","Every attack makes a ridiculous sound effect","Every five minutes they have to take a group selfie","They have to fight while carrying groceries"];
+
+// ===== ADVANCED LOGIC =====
+const RECENT_LIMIT = 10;
+let recentChars = [];
+let recentAttrs = [];
+let recentLocs = [];
+let recentScens = [];
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function pickAvoid(pool, recent, keyFn) {
+  const anti = document.getElementById('antiRepeatToggle').checked;
+  let available = anti
+    ? pool.filter(item => !recent.includes(keyFn(item)))
+    : pool;
+  if (available.length < 3) available = pool; // safety fallback
+  return available[Math.floor(Math.random() * available.length)];
+}
+
+function pushRecent(arr, val) {
+  arr.push(val);
+  if (arr.length > RECENT_LIMIT) arr.shift();
+}
+
+function avgTier(items) {
+  if (!items.length) return 2;
+  return items.reduce((s, i) => s + (i.t || 2), 0) / items.length;
+}
+
+function pickBalancedPair() {
+  const balance = document.getElementById('balanceToggle').checked;
+  
+  // Pick fighter 1 freely (with anti-repeat)
+  const c1 = pickAvoid(characters, recentChars, x => x.n);
+  const a11 = pickAvoid(attributes, recentAttrs, x => x.n);
+  const a12 = pickAvoid(attributes, recentAttrs, x => x.n);
+  
+  let c2, a21, a22;
+  
+  if (balance) {
+    const t1 = avgTier([c1, a11, a12]);
+    // Prefer fighter 2 within ~0.8 tier of fighter 1
+    const candidates = [];
+    for (let i = 0; i < 40; i++) {
+      const cc = pickAvoid(characters, recentChars, x => x.n);
+      const aa1 = pickAvoid(attributes, recentAttrs, x => x.n);
+      const aa2 = pickAvoid(attributes, recentAttrs, x => x.n);
+      const t2 = avgTier([cc, aa1, aa2]);
+      candidates.push({c: cc, a1: aa1, a2: aa2, diff: Math.abs(t2 - t1)});
+    }
+    candidates.sort((a, b) => a.diff - b.diff);
+    const best = candidates[0];
+    c2 = best.c; a21 = best.a1; a22 = best.a2;
+  } else {
+    c2 = pickAvoid(characters, recentChars, x => x.n);
+    a21 = pickAvoid(attributes, recentAttrs, x => x.n);
+    a22 = pickAvoid(attributes, recentAttrs, x => x.n);
+  }
+  
+  return {c1, a11, a12, c2, a21, a22};
+}
+
+function tierLabel(avg) {
+  if (avg < 1.7) return {text: "WEAK", cls: "tier-weak"};
+  if (avg > 2.4) return {text: "STRONG", cls: "tier-strong"};
+  return {text: "MID", cls: "tier-mid"};
+}
+
+function buildSlot(innerId, poolNames, finalName) {
+  const inner = document.getElementById(innerId);
+  const items = shuffle(poolNames).slice(0, 22);
+  items.push(finalName);
+  inner.innerHTML = items.map((t, i) =>
+    `<div class="slot-item${i === items.length - 1 ? ' highlight' : ''}">${t}</div>`
+  ).join('');
+  inner.style.transform = 'translateY(0)';
+  inner.classList.remove('spinning');
+  void inner.offsetWidth;
+  return items.length;
+}
+
+function spinSlot(innerId, count, delayMs) {
+  setTimeout(() => {
+    const inner = document.getElementById(innerId);
+    // Use actual rendered item height so mobile (44px) and desktop (48px) both land correctly
+    const itemH = (inner.querySelector('.slot-item') && inner.querySelector('.slot-item').offsetHeight) || 48;
+    const offset = (count - 1) * itemH;
+    inner.style.transition = 'none';
+    inner.style.transform = 'translateY(0)';
+    void inner.offsetWidth;
+    inner.classList.add('spinning');
+    inner.style.transition = `transform ${2.8 + Math.random() * 0.6}s cubic-bezier(0.08, 0.7, 0.12, 1)`;
+    inner.style.transform = `translateY(-${offset}px)`;
+  }, delayMs);
+}
+
+function setTierBadge(id, items) {
+  const avg = avgTier(items);
+  const info = tierLabel(avg);
+  const el = document.getElementById(id);
+  el.textContent = info.text;
+  el.className = 'tier-badge ' + info.cls;
+}
+
+let spinning = false;
+
+function spinAll() {
+  if (spinning) return;
+  spinning = true;
+  const btn = document.getElementById('spinBtn');
+  btn.disabled = true;
+  btn.textContent = 'SPINNING...';
+  
+  const {c1, a11, a12, c2, a21, a22} = pickBalancedPair();
+  const loc = pickAvoid(locations, recentLocs, x => x);
+  const scen = pickAvoid(scenarios, recentScens, x => x);
+  
+  // Update recent pools
+  pushRecent(recentChars, c1.n);
+  pushRecent(recentChars, c2.n);
+  pushRecent(recentAttrs, a11.n);
+  pushRecent(recentAttrs, a12.n);
+  pushRecent(recentAttrs, a21.n);
+  pushRecent(recentAttrs, a22.n);
+  pushRecent(recentLocs, loc);
+  pushRecent(recentScens, scen);
+  
+  document.getElementById('statBlocked').textContent =
+    recentChars.length + recentAttrs.length;
+  
+  // Tier badges
+  setTierBadge('tier1', [c1, a11, a12]);
+  setTierBadge('tier2', [c2, a21, a22]);
+  
+  // Build strips
+  const charNames = characters.map(c => c.n);
+  const attrNames = attributes.map(a => a.n);
+  
+  const n1c = buildSlot('inner1char', charNames, c1.n);
+  const n1a1 = buildSlot('inner1a1', attrNames, a11.n);
+  const n1a2 = buildSlot('inner1a2', attrNames, a12.n);
+  const n2c = buildSlot('inner2char', charNames, c2.n);
+  const n2a1 = buildSlot('inner2a1', attrNames, a21.n);
+  const n2a2 = buildSlot('inner2a2', attrNames, a22.n);
+  
+  document.getElementById('locValue').textContent = '???';
+  document.getElementById('scenValue').textContent = '???';
+  
+  // Staggered spins for more animated feel
+  spinSlot('inner1char', n1c, 40);
+  spinSlot('inner1a1', n1a1, 140);
+  spinSlot('inner1a2', n1a2, 240);
+  spinSlot('inner2char', n2c, 340);
+  spinSlot('inner2a1', n2a1, 440);
+  spinSlot('inner2a2', n2a2, 540);
+  
+  // Flash cards when they land
+  setTimeout(() => {
+    document.getElementById('card1').classList.add('flash');
+    setTimeout(() => document.getElementById('card1').classList.remove('flash'), 450);
+  }, 2900);
+  setTimeout(() => {
+    document.getElementById('card2').classList.add('flash');
+    setTimeout(() => document.getElementById('card2').classList.remove('flash'), 450);
+  }, 3100);
+  
+  setTimeout(() => {
+    document.getElementById('locValue').textContent = loc;
+    document.getElementById('scenValue').textContent = scen;
+  }, 2600);
+  
+  setTimeout(() => {
+    showPostSpinFeatures(c1, a11, a12, c2, a21, a22, loc, scen);
+    btn.disabled = false;
+    btn.textContent = 'SPIN AGAIN!';
+    spinning = false;
+  }, 3400);
+}
+
+
+// ===== ARGUMENT HELPER + IMAGE PROMPT + SUDDEN DEATH =====
+
+const suddenDeathScenarios = [
+  "First one to blink loses",
+  "They must fight while standing on one foot — first to put the other foot down loses",
+  "Sudden death: only one attack each, then the table votes",
+  "They fight with their eyes closed",
+  "The next person who speaks loses",
+  "They must settle it with a staring contest that escalates into violence",
+  "Rock-paper-scissors but with actual punches",
+  "First one to smile loses",
+  "They can only use their weakest attribute",
+  "The table picks one attribute to temporarily ban for each fighter",
+  "They must fight in complete silence",
+  "Whoever makes the better one-sentence argument wins — no follow-ups",
+  "They swap attributes for the sudden death round",
+  "A coin flip decides who gets a free hit first",
+  "They must fight while complimenting each other",
+  "First one to use the word 'actually' loses",
+  "The fight continues but gravity is now sideways",
+  "They both lose one random attribute immediately",
+  "Sudden death location: the floor is now actually lava",
+  "Whoever can make the table laugh first wins",
+  "They must argue in the style of a courtroom drama",
+  "Only one sentence each. Make it count.",
+  "The sudden death rule is: no powers, pure vibes",
+  "They fight using only the power of friendship (and also violence)",
+  "First one to reference a movie loses",
+  "They must settle it with interpretive dance",
+  "Sudden death: the audience (the table) throws one new random rule into the mix",
+  "Whoever has the more tragic backstory wins automatically",
+  "They must fight while balancing a spoon on their nose",
+  "The next random object that appears becomes the only legal weapon"
+];
+
+const argTemplates = {
+  strong: [
+    "Has raw power that simply overrules most counter-arguments",
+    "Can end the fight before the other side finishes their opening statement",
+    "The sheer scale of this ability makes most weaknesses irrelevant",
+    "This is the kind of power that makes the table go quiet for a second",
+    "Hard to argue against pure overwhelming force"
+  ],
+  clever: [
+    "Can out-think or out-maneuver almost any direct approach",
+    "Has the kind of hacks that turn the fight into a puzzle the opponent has to solve",
+    "Rules-lawyering potential is off the charts",
+    "Can reframe the entire fight in their favor mid-argument",
+    "The opponent has to explain how they even touch this person"
+  ],
+  absurd: [
+    "Is so ridiculous that normal logic stops working",
+    "The comedy factor alone can swing the table vote",
+    "Makes the other fighter look over-serious by comparison",
+    "Has main-character energy that the table often rewards",
+    "The 'how is this even a thing' factor is a legitimate strategy"
+  ],
+  underdog: [
+    "Nobody expects them to win — which is exactly when they do",
+    "The table loves a good underdog story",
+    "Can lean into pure chaos and still look like a genius",
+    "Weakness can become a strength if argued creatively",
+    "The 'but what if...' argument is wide open"
+  ],
+  location: [
+    "The location heavily favors mobility / environment control",
+    "This setting turns their biggest weakness into a non-issue",
+    "The arena itself becomes a weapon for the right fighter",
+    "Home-field advantage is real if you sell it hard enough"
+  ],
+  scenario: [
+    "The scenario completely changes what 'winning' even means",
+    "This rule makes traditional strength almost irrelevant",
+    "Whoever adapts to the scenario faster usually takes the vote",
+    "The twist is the real main character of this fight"
+  ]
+};
+
+function pickRandom(arr, n=1) {
+  const shuffled = [...arr].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, n);
+}
+
+function generateArgs(charName, attr1, attr2, tierAvg, isFighter1) {
+  const points = [];
+  // Power-based
+  if (tierAvg >= 2.5) {
+    points.push(...pickRandom(argTemplates.strong, 1));
+  } else if (tierAvg <= 1.6) {
+    points.push(...pickRandom(argTemplates.underdog, 1));
+  } else {
+    points.push(...pickRandom(argTemplates.clever, 1));
+  }
+  // Flavor from attributes
+  const combined = (attr1 + ' ' + attr2).toLowerCase();
+  if (combined.includes('plot') || combined.includes('main character') || combined.includes('anime') || combined.includes('friendship')) {
+    points.push(...pickRandom(argTemplates.absurd, 1));
+  } else if (combined.includes('immortal') || combined.includes('invulnerable') || combined.includes('regenerate') || combined.includes('force field')) {
+    points.push("Extremely hard to put down — the opponent has to explain the finishing blow");
+  } else if (combined.includes('tiny') || combined.includes('ant') || combined.includes('6 inches') || combined.includes('naked')) {
+    points.push(...pickRandom(argTemplates.underdog, 1));
+  } else {
+    points.push(...pickRandom(argTemplates.clever.concat(argTemplates.absurd), 1));
+  }
+  // Always add one more
+  points.push(...pickRandom(argTemplates.strong.concat(argTemplates.clever).concat(argTemplates.absurd), 1));
+  // Deduplicate and limit
+  return [...new Set(points)].slice(0, 3);
+}
+
+// Store last matchup for image prompt
+let lastMatchup = null;
+
+function buildImagePrompt(c1, a11, a12, c2, a21, a22, loc, scen) {
+  return `Epic comic-book style illustration of a Superfight matchup. ` +
+    `Left side: ${c1.n} who ${a11.n} and ${a12.n}, in a dynamic fighting pose with their abilities clearly visible. ` +
+    `Right side: ${c2.n} who ${a21.n} and ${a22.n}, ready to fight with their powers on display. ` +
+    `Setting: ${loc}. Scenario twist: ${scen}. ` +
+    `Dramatic cinematic lighting, highly detailed, vibrant colors, comic book ink style, intense action composition, both fighters facing each other.`;
+}
+
+function copyImagePrompt() {
+  if (!lastMatchup) return;
+  const { c1, a11, a12, c2, a21, a22, loc, scen } = lastMatchup;
+  const prompt = buildImagePrompt(c1, a11, a12, c2, a21, a22, loc, scen);
+  const btn = document.getElementById('promptBtn');
+  const feedback = document.getElementById('promptFeedback');
+
+  const done = () => {
+    btn.textContent = 'COPIED!';
+    btn.classList.add('copied');
+    feedback.textContent = 'Prompt copied — paste it into any AI image generator.';
+    setTimeout(() => {
+      btn.textContent = 'COPY IMAGE PROMPT';
+      btn.classList.remove('copied');
+      feedback.textContent = '';
+    }, 2200);
+  };
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(prompt).then(done).catch(() => {
+      // Fallback for older browsers / insecure contexts
+      const ta = document.createElement('textarea');
+      ta.value = prompt;
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); done(); }
+      catch (e) { feedback.textContent = 'Copy failed — long-press the prompt if needed.'; }
+      document.body.removeChild(ta);
+    });
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = prompt;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); done(); }
+    catch (e) { feedback.textContent = 'Copy failed — long-press the prompt if needed.'; }
+    document.body.removeChild(ta);
+  }
+}
+
+function showPostSpinFeatures(c1, a11, a12, c2, a21, a22, loc, scen) {
+  // Save for image prompt
+  lastMatchup = { c1, a11, a12, c2, a21, a22, loc, scen };
+
+  // Argument helper
+  const t1 = avgTier([c1, a11, a12]);
+  const t2 = avgTier([c2, a21, a22]);
+  const args1 = generateArgs(c1.n, a11.n, a12.n, t1, true);
+  const args2 = generateArgs(c2.n, a21.n, a22.n, t2, false);
+  
+  const list1 = document.getElementById('argList1');
+  const list2 = document.getElementById('argList2');
+  list1.innerHTML = args1.map(a => `<li>${a}</li>`).join('');
+  list2.innerHTML = args2.map(a => `<li>${a}</li>`).join('');
+  document.getElementById('argSide1').querySelector('h4').textContent = c1.n + ' talking points';
+  document.getElementById('argSide2').querySelector('h4').textContent = c2.n + ' talking points';
+  document.getElementById('argHelperBox').style.display = 'block';
+
+  // Image prompt box
+  document.getElementById('promptBox').style.display = 'block';
+  document.getElementById('promptFeedback').textContent = '';
+  document.getElementById('promptBtn').textContent = 'COPY IMAGE PROMPT';
+  document.getElementById('promptBtn').classList.remove('copied');
+}
+
+function spinSuddenDeath() {
+  const btn = document.getElementById('suddenBtn');
+  const result = document.getElementById('suddenResult');
+  btn.disabled = true;
+  result.textContent = 'Drawing sudden death rule...';
+  result.style.color = '#FCA5A5';
+  
+  setTimeout(() => {
+    const rule = suddenDeathScenarios[Math.floor(Math.random() * suddenDeathScenarios.length)];
+    result.textContent = '⚡ ' + rule;
+    result.style.color = '#FCA5A5';
+    btn.disabled = false;
+  }, 600);
+}
+
+// Hook into existing spinAll completion
+
+// Stats
+document.getElementById('statChar').textContent = characters.length;
+document.getElementById('statAttr').textContent = attributes.length;
+document.getElementById('statLoc').textContent = locations.length;
+document.getElementById('statScen').textContent = scenarios.length;
+
+setTimeout(spinAll, 350);
+</script>
+</body>
+</html>
